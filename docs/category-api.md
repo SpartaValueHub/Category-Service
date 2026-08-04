@@ -110,3 +110,65 @@
 |--------|------|------|
 | 404 | CATEGORY_NOT_FOUND | parentUuid에 해당하는 카테고리 없음 |
 
+---
+
+## POST /api/v1/categories
+
+### Summary
+카테고리를 등록한다. (총관리자 BO)
+
+### Method · Path
+`POST /api/v1/categories`
+
+### Auth
+불필요 (현재 permitAll)
+
+### Request
+- Content-Type: `application/json`
+
+| 위치 | 필드 | 타입 | 필수 | 제약/설명 |
+|------|------|------|------|-----------|
+| Body | categoryName | string | Y | 최대 50자. 같은 부모 아래 중복 불가 |
+| Body | parentUuid | string | N | 없으면 최상위(root). 있으면 해당 부모 하위 |
+| Body | sortOrder | number | N | 없으면 같은 부모 형제 중 마지막+1 (형제 없으면 1) |
+
+```json
+{
+  "categoryName": "시계",
+  "parentUuid": "11111111-1111-1111-1111-111111111111",
+  "sortOrder": 3
+}
+```
+
+### Response
+- Status: `201 Created`
+- Body: 생성된 카테고리 단건 (요약)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| categoryUuid | string | 카테고리 UUID |
+| categoryName | string | 카테고리명 |
+| parentUuid | string \| null | 부모 카테고리 UUID |
+| sortOrder | number | 노출 순서 |
+| depth | number | 계층 깊이 (부모 depth+1, 최상위 0) |
+| active | boolean | 활성화 여부 (생성 시 true) |
+
+```json
+{
+  "categoryUuid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "categoryName": "시계",
+  "parentUuid": "11111111-1111-1111-1111-111111111111",
+  "sortOrder": 3,
+  "depth": 1,
+  "active": true
+}
+```
+
+### Errors
+
+| status | code | 의미 |
+|--------|------|------|
+| 400 | INVALID_ARGUMENT | 카테고리명 누락/형식 오류, sortOrder 음수 등 |
+| 404 | CATEGORY_NOT_FOUND | parentUuid에 해당하는 부모 없음 |
+| 409 | DUPLICATE_CATEGORY_NAME | 같은 상위 아래 동일 카테고리명 존재 |
+

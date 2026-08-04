@@ -63,4 +63,13 @@ public class CategoryLoadAdapter implements CategoryLoadPort {
 				.map(CategoryEntityMapper::toDomain)
 				.toList();
 	}
+
+	// 같은 부모 아래 동일 카테고리명 존재 여부
+	@Override
+	public boolean existsByParentIdAndName(Long parentId, String categoryName) {
+		if (parentId == null) {
+			return categoryJpaRepository.existsByParentIdIsNullAndCategoryName(categoryName);
+		}
+		return categoryJpaRepository.existsByParentIdAndCategoryName(parentId, categoryName);
+	}
 }

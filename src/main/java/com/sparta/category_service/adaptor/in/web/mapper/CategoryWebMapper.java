@@ -27,6 +27,18 @@ public final class CategoryWebMapper {
 				.toList();
 	}
 
+	// 요약 단건을 응답 VO로 변환한다
+	public static CategorySummaryResponseVo toSummaryResponse(CategorySummaryDto item) {
+		return CategorySummaryResponseVo.builder()
+				.categoryUuid(item.getCategoryUuid())
+				.categoryName(item.getCategoryName())
+				.parentUuid(item.getParentUuid())
+				.sortOrder(item.getSortOrder())
+				.depth(item.getDepth())
+				.active(item.isActive())
+				.build();
+	}
+
 	// 트리 노드 DTO를 응답 VO로 변환한다
 	private static CategoryTreeNodeResponseVo toTreeNodeResponse(CategoryTreeNodeDto node) {
 		return CategoryTreeNodeResponseVo.builder()
@@ -40,15 +52,4 @@ public final class CategoryWebMapper {
 				.build();
 	}
 
-	// 요약 DTO를 응답 VO로 변환한다
-	private static CategorySummaryResponseVo toSummaryResponse(CategorySummaryDto item) {
-		return CategorySummaryResponseVo.builder()
-				.categoryUuid(item.getCategoryUuid())
-				.categoryName(item.getCategoryName())
-				.parentUuid(item.getParentUuid())
-				.sortOrder(item.getSortOrder())
-				.depth(item.getDepth())
-				.active(item.isActive())
-				.build();
-	}
 }
