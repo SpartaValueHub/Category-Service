@@ -9,9 +9,12 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sparta.category_service.application.port.in.LoadCategoryChildrenUseCase;
 import com.sparta.category_service.application.port.in.LoadCategoryTreeUseCase;
+import com.sparta.category_service.application.port.in.dto.CategorySummaryDto;
 import com.sparta.category_service.application.port.in.dto.CategoryTreeNodeDto;
 import com.sparta.category_service.application.port.out.CategoryLoadPort;
+import com.sparta.category_service.domain.exception.CategoryNotFoundException;
 import com.sparta.category_service.domain.model.Category;
 
 import lombok.RequiredArgsConstructor;
@@ -20,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class CategoryQueryService implements LoadCategoryTreeUseCase {
+public class CategoryQueryService implements LoadCategoryTreeUseCase, LoadCategoryChildrenUseCase {
 
 	// 카테고리 조회 Port
 	private final CategoryLoadPort categoryLoadPort;
@@ -30,6 +33,36 @@ public class CategoryQueryService implements LoadCategoryTreeUseCase {
 	public List<CategoryTreeNodeDto> loadTree(boolean includeInactive) {
 		List<Category> categories = categoryLoadPort.findAll(includeInactive);
 		return buildTree(categories);
+	}
+
+	// parentUuid가 없으면 최상위, 있으면 해당 부모의 자식 목록을 조회한다
+	@Override
+	public List<CategorySummaryDto> loadChildren(String parentUuid, boolean includeInactive) {
+		if (parentUuid == null || parentUuid.isBlank()) {
+			return toSummaries(categoryLoadPort.findRoots(includeInactive), null);
+		}
+
+		Category parent = categoryLoadPort.findByUuid(parentUuid.trim())
+				.orElseThrow(() -> new CategoryNotFoundException("카테고리를 찾을 수 없습니다."));
+
+		return toSummaries(
+				categoryLoadPort.findChildren(parent.getCategoryId(), includeInactive),
+				parent.getCategoryUuid()
+		);
+	}
+
+	// Domain 목록을 요약 DTO로 변환한다
+	private List<CategorySummaryDto> toSummaries(List<Category> categories, String parentUuid) {
+		return categories.stream()
+				.map(category -> CategorySummaryDto.builder()
+						.categoryUuid(category.getCategoryUuid())
+						.categoryName(category.getCategoryName())
+						.parentUuid(parentUuid)
+						.sortOrder(category.getSortOrder())
+						.depth(category.getDepth())
+						.active(category.isActive())
+						.build())
+				.toList();
 	}
 
 	// 평탄 목록을 부모-자식 트리로 변환한다
@@ -49,7 +82,7 @@ public class CategoryQueryService implements LoadCategoryTreeUseCase {
 		// categoryId -> 트리 노드
 		Map<Long, CategoryTreeNodeDto> nodeById = new LinkedHashMap<>();
 		for (Category category : sorted) {
-			String parentUuid = category.getParentId() == null
+			String mappedParentUuid = category.getParentId() == null
 					? null
 					: uuidById.get(category.getParentId());
 
@@ -58,7 +91,7 @@ public class CategoryQueryService implements LoadCategoryTreeUseCase {
 					CategoryTreeNodeDto.builder()
 							.categoryUuid(category.getCategoryUuid())
 							.categoryName(category.getCategoryName())
-							.parentUuid(parentUuid)
+							.parentUuid(mappedParentUuid)
 							.sortOrder(category.getSortOrder())
 							.depth(category.getDepth())
 							.active(category.isActive())

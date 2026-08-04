@@ -57,3 +57,56 @@
 
 ### Errors
 공통 Error Response 형식은 후속 예외 고도화 PR에서 확장한다. 현재 트리 조회는 정상 목록(빈 배열 포함)을 반환한다.
+
+---
+
+## GET /api/v1/categories
+
+### Summary
+부모 UUID 기준 자식 카테고리 목록을 조회한다. `parentUuid`가 없으면 최상위 목록을 반환한다.
+
+### Method · Path
+`GET /api/v1/categories`
+
+### Auth
+불필요 (현재 permitAll)
+
+### Request
+
+| 위치 | 필드 | 타입 | 필수 | 제약/설명 |
+|------|------|------|------|-----------|
+| Query | parentUuid | string | N | 없으면 최상위(root) 목록 |
+| Query | includeInactive | boolean | N | 기본 `false`. `true`면 비활성 포함 |
+
+### Response
+- Status: `200 OK`
+- Body: 카테고리 요약 배열 (평탄 목록, children 없음)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| categoryUuid | string | 카테고리 UUID |
+| categoryName | string | 카테고리명 |
+| parentUuid | string \| null | 부모 카테고리 UUID |
+| sortOrder | number | 노출 순서 |
+| depth | number | 계층 깊이 |
+| active | boolean | 활성화 여부 |
+
+```json
+[
+  {
+    "categoryUuid": "22222222-2222-2222-2222-222222222222",
+    "categoryName": "가방",
+    "parentUuid": "11111111-1111-1111-1111-111111111111",
+    "sortOrder": 1,
+    "depth": 1,
+    "active": true
+  }
+]
+```
+
+### Errors
+
+| status | code | 의미 |
+|--------|------|------|
+| 404 | CATEGORY_NOT_FOUND | parentUuid에 해당하는 카테고리 없음 |
+

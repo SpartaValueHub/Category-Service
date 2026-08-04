@@ -33,4 +33,10 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
 
 	// 활성 카테고리 목록 (노출 순서 오름차순)
 	List<CategoryEntity> findByActiveTrueOrderBySortOrderAscCategoryIdAsc();
+
+	// 활성 최상위 카테고리 목록
+	List<CategoryEntity> findByParentIdIsNullAndActiveTrueOrderBySortOrderAscCategoryIdAsc();
+
+	// 활성 자식 카테고리 목록
+	List<CategoryEntity> findByParentIdAndActiveTrueOrderBySortOrderAscCategoryIdAsc(Long parentId);
 }
