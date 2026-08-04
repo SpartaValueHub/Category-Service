@@ -1,6 +1,7 @@
 package com.sparta.category_service.adaptor.out.mysql;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,37 @@ public class CategoryLoadAdapter implements CategoryLoadPort {
 		List<CategoryEntity> entities = includeInactive
 				? categoryJpaRepository.findAllByOrderBySortOrderAscCategoryIdAsc()
 				: categoryJpaRepository.findByActiveTrueOrderBySortOrderAscCategoryIdAsc();
+
+		return entities.stream()
+				.map(CategoryEntityMapper::toDomain)
+				.toList();
+	}
+
+	// 카테고리 UUID로 단건 조회
+	@Override
+	public Optional<Category> findByUuid(String categoryUuid) {
+		return categoryJpaRepository.findByCategoryUuid(categoryUuid)
+				.map(CategoryEntityMapper::toDomain);
+	}
+
+	// 최상위 카테고리 목록 조회
+	@Override
+	public List<Category> findRoots(boolean includeInactive) {
+		List<CategoryEntity> entities = includeInactive
+				? categoryJpaRepository.findByParentIdIsNullOrderBySortOrderAscCategoryIdAsc()
+				: categoryJpaRepository.findByParentIdIsNullAndActiveTrueOrderBySortOrderAscCategoryIdAsc();
+
+		return entities.stream()
+				.map(CategoryEntityMapper::toDomain)
+				.toList();
+	}
+
+	// 특정 부모의 자식 카테고리 목록 조회
+	@Override
+	public List<Category> findChildren(Long parentId, boolean includeInactive) {
+		List<CategoryEntity> entities = includeInactive
+				? categoryJpaRepository.findByParentIdOrderBySortOrderAscCategoryIdAsc(parentId)
+				: categoryJpaRepository.findByParentIdAndActiveTrueOrderBySortOrderAscCategoryIdAsc(parentId);
 
 		return entities.stream()
 				.map(CategoryEntityMapper::toDomain)
