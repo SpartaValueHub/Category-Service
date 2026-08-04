@@ -9,6 +9,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -16,16 +18,18 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "category")
 @Getter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class CategoryEntity {
 
-	// 카테고리 식별자 (PK)
+	// 카테고리 식별자
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "category_id")
 	private Long categoryId;
 
-	// 부모 카테고리 식별자 (최상위면 null)
+	// 부모 식별자
 	@Column(name = "parent_id")
 	private Long parentId;
 
@@ -41,7 +45,7 @@ public class CategoryEntity {
 	@Column(name = "sort_order", nullable = false)
 	private int sortOrder;
 
-	// 계층 깊이 (최상위 0)
+	// 깊이
 	@Column(name = "depth", nullable = false)
 	private int depth;
 
@@ -53,7 +57,7 @@ public class CategoryEntity {
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
-	// 삭제일시 (소프트 삭제, 활성면 null)
+	// 삭제일시
 	@Column(name = "deleted_at")
 	private Instant deletedAt;
 
@@ -67,16 +71,16 @@ public class CategoryEntity {
 			boolean active,
 			Instant createdAt
 	) {
-		CategoryEntity entity = new CategoryEntity();
-		entity.categoryUuid = categoryUuid;
-		entity.parentId = parentId;
-		entity.categoryName = categoryName;
-		entity.sortOrder = sortOrder;
-		entity.depth = depth;
-		entity.active = active;
-		entity.createdAt = createdAt;
-		entity.deletedAt = null;
-		return entity;
+		return CategoryEntity.builder()
+				.categoryUuid(categoryUuid)
+				.parentId(parentId)
+				.categoryName(categoryName)
+				.sortOrder(sortOrder)
+				.depth(depth)
+				.active(active)
+				.createdAt(createdAt)
+				.deletedAt(null)
+				.build();
 	}
 
 	// 도메인 변경분을 Entity에 반영
