@@ -27,4 +27,10 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
 
 	// 하위 카테고리 존재 여부
 	boolean existsByParentId(Long parentId);
+
+	// 전체 카테고리 목록 (노출 순서 오름차순)
+	List<CategoryEntity> findAllByOrderBySortOrderAscCategoryIdAsc();
+
+	// 활성 카테고리 목록 (노출 순서 오름차순)
+	List<CategoryEntity> findByActiveTrueOrderBySortOrderAscCategoryIdAsc();
 }
