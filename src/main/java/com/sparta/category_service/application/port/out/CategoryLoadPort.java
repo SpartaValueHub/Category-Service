@@ -19,4 +19,7 @@ public interface CategoryLoadPort {
 
 	// 특정 부모의 자식 카테고리 목록 조회
 	List<Category> findChildren(Long parentId, boolean includeInactive);
+
+	// 같은 부모 아래 동일 카테고리명 존재 여부 (parentId null이면 최상위)
+	boolean existsByParentIdAndName(Long parentId, String categoryName);
 }

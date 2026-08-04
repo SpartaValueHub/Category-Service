@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sparta.category_service.application.exception.UnauthorizedException;
 import com.sparta.category_service.domain.exception.CategoryNotFoundException;
+import com.sparta.category_service.domain.exception.DuplicateCategoryNameException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -43,6 +44,15 @@ public class GlobalExceptionHandler {
 			HttpServletRequest request
 	) {
 		return buildError(HttpStatus.NOT_FOUND, ex.getCode(), ex.getMessage(), request.getRequestURI());
+	}
+
+	// 동일 부모 아래 카테고리명 중복 처리
+	@ExceptionHandler(DuplicateCategoryNameException.class)
+	public ResponseEntity<Map<String, Object>> handleDuplicateCategoryName(
+			DuplicateCategoryNameException ex,
+			HttpServletRequest request
+	) {
+		return buildError(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request.getRequestURI());
 	}
 
 	// 공통 Error Response 생성
