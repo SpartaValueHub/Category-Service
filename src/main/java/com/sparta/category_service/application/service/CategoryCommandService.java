@@ -15,12 +15,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sparta.category_service.application.port.in.CreateCategoryUseCase;
+import com.sparta.category_service.application.port.in.DeactivateCategoryUseCase;
 import com.sparta.category_service.application.port.in.UpdateCategoryUseCase;
 import com.sparta.category_service.application.port.in.dto.CategorySummaryDto;
 import com.sparta.category_service.application.port.in.dto.CreateCategoryCommand;
 import com.sparta.category_service.application.port.in.dto.UpdateCategoryCommand;
 import com.sparta.category_service.application.port.out.CategoryLoadPort;
 import com.sparta.category_service.application.port.out.CategorySavePort;
+import com.sparta.category_service.domain.exception.CategoryHasChildrenException;
 import com.sparta.category_service.domain.exception.CategoryNotFoundException;
 import com.sparta.category_service.domain.exception.DuplicateCategoryNameException;
 import com.sparta.category_service.domain.exception.InvalidCategoryHierarchyException;
@@ -32,7 +34,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class CategoryCommandService implements CreateCategoryUseCase, UpdateCategoryUseCase {
+public class CategoryCommandService implements CreateCategoryUseCase, UpdateCategoryUseCase, DeactivateCategoryUseCase {
 
 	// 카테고리 조회 Port
 	private final CategoryLoadPort categoryLoadPort;
@@ -139,6 +141,27 @@ public class CategoryCommandService implements CreateCategoryUseCase, UpdateCate
 		if (depthDelta != 0) {
 			updateDescendantDepths(saved.getCategoryId(), depthDelta);
 		}
+
+		String parentUuid = resolveParentUuid(saved.getParentId());
+		return toSummary(saved, parentUuid);
+	}
+
+	// 카테고리를 소프트 삭제(비활성)한다
+	@Override
+	public CategorySummaryDto deactivate(String categoryUuid) {
+		if (categoryUuid == null || categoryUuid.isBlank()) {
+			throw new IllegalArgumentException("카테고리 UUID는 필수입니다.");
+		}
+
+		Category target = categoryLoadPort.findByUuid(categoryUuid.trim())
+				.orElseThrow(() -> new CategoryNotFoundException("카테고리를 찾을 수 없습니다."));
+
+		if (categoryLoadPort.existsChildren(target.getCategoryId())) {
+			throw new CategoryHasChildrenException("하위 카테고리가 있어 삭제할 수 없습니다.");
+		}
+
+		target.deactivate(Instant.now());
+		Category saved = categorySavePort.update(target);
 
 		String parentUuid = resolveParentUuid(saved.getParentId());
 		return toSummary(saved, parentUuid);

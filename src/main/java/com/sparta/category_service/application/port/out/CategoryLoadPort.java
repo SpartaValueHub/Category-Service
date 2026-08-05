@@ -28,4 +28,7 @@ public interface CategoryLoadPort {
 
 	// 같은 부모 아래 동일 카테고리명 존재 여부 (본인 ID 제외)
 	boolean existsByParentIdAndNameExcludingId(Long parentId, String categoryName, Long excludeCategoryId);
+
+	// 해당 카테고리를 부모로 두는 자식이 있는지
+	boolean existsChildren(Long parentId);
 }

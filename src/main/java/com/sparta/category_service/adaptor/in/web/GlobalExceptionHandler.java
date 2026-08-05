@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.sparta.category_service.application.exception.UnauthorizedException;
+import com.sparta.category_service.domain.exception.CategoryHasChildrenException;
 import com.sparta.category_service.domain.exception.CategoryNotFoundException;
 import com.sparta.category_service.domain.exception.DuplicateCategoryNameException;
 import com.sparta.category_service.domain.exception.InvalidCategoryHierarchyException;
@@ -63,6 +64,15 @@ public class GlobalExceptionHandler {
 			HttpServletRequest request
 	) {
 		return buildError(HttpStatus.BAD_REQUEST, ex.getCode(), ex.getMessage(), request.getRequestURI());
+	}
+
+	// 하위 카테고리가 있어 삭제 불가 처리
+	@ExceptionHandler(CategoryHasChildrenException.class)
+	public ResponseEntity<Map<String, Object>> handleCategoryHasChildren(
+			CategoryHasChildrenException ex,
+			HttpServletRequest request
+	) {
+		return buildError(HttpStatus.CONFLICT, ex.getCode(), ex.getMessage(), request.getRequestURI());
 	}
 
 	// 공통 Error Response 생성

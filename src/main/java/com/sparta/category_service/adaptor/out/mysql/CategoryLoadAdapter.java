@@ -95,4 +95,10 @@ public class CategoryLoadAdapter implements CategoryLoadPort {
 				excludeCategoryId
 		);
 	}
+
+	// 해당 카테고리를 부모로 두는 자식이 있는지
+	@Override
+	public boolean existsChildren(Long parentId) {
+		return categoryJpaRepository.existsByParentId(parentId);
+	}
 }
