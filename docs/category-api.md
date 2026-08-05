@@ -289,3 +289,57 @@
 | 404 | CATEGORY_NOT_FOUND | 대상 카테고리 없음 |
 | 409 | CATEGORY_HAS_CHILDREN | 하위 카테고리가 있어 삭제 불가 |
 
+---
+
+## GET /api/v1/categories/leaves
+
+### Summary
+FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** 목록을 조회한다.
+
+### Method · Path
+`GET /api/v1/categories/leaves`
+
+### Auth
+불필요 (현재 permitAll)
+
+### Request
+
+| 위치 | 필드 | 타입 | 필수 | 제약/설명 |
+|------|------|------|------|-----------|
+| Query | parentUuid | string | N | 없으면 전체 활성 리프. 있으면 해당 카테고리 하위 트리의 활성 리프만 |
+
+- 비활성 카테고리는 제외한다
+- 리프 = 활성 카테고리 중 자식이 없는 노드 (브랜드 또는 브랜드 없는 중분류 끝단)
+
+### Response
+- Status: `200 OK`
+- Body: 카테고리 요약 배열
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| categoryUuid | string | 카테고리 UUID |
+| categoryName | string | 카테고리명 |
+| parentUuid | string \| null | 부모 카테고리 UUID |
+| sortOrder | number | 노출 순서 |
+| depth | number | 계층 깊이 |
+| active | boolean | 항상 `true` |
+
+```json
+[
+  {
+    "categoryUuid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "categoryName": "샤넬",
+    "parentUuid": "22222222-2222-2222-2222-222222222222",
+    "sortOrder": 1,
+    "depth": 2,
+    "active": true
+  }
+]
+```
+
+### Errors
+
+| status | code | 의미 |
+|--------|------|------|
+| 404 | CATEGORY_NOT_FOUND | parentUuid에 해당하는 활성 카테고리 없음 |
+

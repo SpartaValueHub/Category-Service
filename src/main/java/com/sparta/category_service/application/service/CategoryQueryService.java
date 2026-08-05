@@ -1,15 +1,21 @@
 package com.sparta.category_service.application.service;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sparta.category_service.application.port.in.LoadCategoryChildrenUseCase;
+import com.sparta.category_service.application.port.in.LoadCategoryLeavesUseCase;
 import com.sparta.category_service.application.port.in.LoadCategoryTreeUseCase;
 import com.sparta.category_service.application.port.in.dto.CategorySummaryDto;
 import com.sparta.category_service.application.port.in.dto.CategoryTreeNodeDto;
@@ -23,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class CategoryQueryService implements LoadCategoryTreeUseCase, LoadCategoryChildrenUseCase {
+public class CategoryQueryService implements LoadCategoryTreeUseCase, LoadCategoryChildrenUseCase, LoadCategoryLeavesUseCase {
 
 	// 카테고리 조회 Port
 	private final CategoryLoadPort categoryLoadPort;
@@ -51,13 +57,101 @@ public class CategoryQueryService implements LoadCategoryTreeUseCase, LoadCatego
 		);
 	}
 
-	// Domain 목록을 요약 DTO로 변환한다
+	// FO: 활성 리프만 조회한다 (parentUuid가 있으면 그 하위 트리의 리프만)
+	@Override
+	public List<CategorySummaryDto> loadLeaves(String parentUuid) {
+		// FO는 활성 카테고리만 대상으로 한다
+		List<Category> activeCategories = categoryLoadPort.findAll(false);
+		List<Category> leaves = findLeaves(activeCategories);
+
+		if (parentUuid != null && !parentUuid.isBlank()) {
+			Category parent = categoryLoadPort.findByUuid(parentUuid.trim())
+					.orElseThrow(() -> new CategoryNotFoundException("카테고리를 찾을 수 없습니다."));
+			if (!parent.isActive()) {
+				throw new CategoryNotFoundException("카테고리를 찾을 수 없습니다.");
+			}
+
+			Set<Long> subtreeIds = collectSubtreeIds(parent.getCategoryId(), activeCategories);
+			leaves = leaves.stream()
+					.filter(leaf -> subtreeIds.contains(leaf.getCategoryId()))
+					.toList();
+		}
+
+		List<Category> sortedLeaves = leaves.stream()
+				.sorted(Comparator
+						.comparingInt(Category::getSortOrder)
+						.thenComparing(Category::getCategoryId))
+				.toList();
+
+		return toSummariesWithParentUuid(sortedLeaves, activeCategories);
+	}
+
+	// 활성 목록에서 자식이 없는 노드(=리프)를 고른다
+	private List<Category> findLeaves(List<Category> categories) {
+		Set<Long> parentIds = categories.stream()
+				.map(Category::getParentId)
+				.filter(Objects::nonNull)
+				.collect(Collectors.toSet());
+
+		return categories.stream()
+				.filter(category -> !parentIds.contains(category.getCategoryId()))
+				.toList();
+	}
+
+	// rootId 자신과 모든 하위의 categoryId 집합
+	private Set<Long> collectSubtreeIds(Long rootId, List<Category> categories) {
+		Map<Long, List<Category>> childrenByParentId = new LinkedHashMap<>();
+		for (Category category : categories) {
+			if (category.getParentId() == null) {
+				continue;
+			}
+			childrenByParentId
+					.computeIfAbsent(category.getParentId(), ignored -> new ArrayList<>())
+					.add(category);
+		}
+
+		Set<Long> subtreeIds = new HashSet<>();
+		ArrayDeque<Long> queue = new ArrayDeque<>();
+		queue.add(rootId);
+		subtreeIds.add(rootId);
+
+		while (!queue.isEmpty()) {
+			Long parentId = queue.poll();
+			for (Category child : childrenByParentId.getOrDefault(parentId, List.of())) {
+				if (subtreeIds.add(child.getCategoryId())) {
+					queue.add(child.getCategoryId());
+				}
+			}
+		}
+		return subtreeIds;
+	}
+
+	// Domain 목록을 요약 DTO로 변환한다 (공통 parentUuid)
 	private List<CategorySummaryDto> toSummaries(List<Category> categories, String parentUuid) {
 		return categories.stream()
 				.map(category -> CategorySummaryDto.builder()
 						.categoryUuid(category.getCategoryUuid())
 						.categoryName(category.getCategoryName())
 						.parentUuid(parentUuid)
+						.sortOrder(category.getSortOrder())
+						.depth(category.getDepth())
+						.active(category.isActive())
+						.build())
+				.toList();
+	}
+
+	// Domain 목록을 요약 DTO로 변환한다 (각 노드의 부모 UUID 매핑)
+	private List<CategorySummaryDto> toSummariesWithParentUuid(List<Category> categories, List<Category> allForLookup) {
+		Map<Long, String> uuidById = new LinkedHashMap<>();
+		for (Category category : allForLookup) {
+			uuidById.put(category.getCategoryId(), category.getCategoryUuid());
+		}
+
+		return categories.stream()
+				.map(category -> CategorySummaryDto.builder()
+						.categoryUuid(category.getCategoryUuid())
+						.categoryName(category.getCategoryName())
+						.parentUuid(category.getParentId() == null ? null : uuidById.get(category.getParentId()))
 						.sortOrder(category.getSortOrder())
 						.depth(category.getDepth())
 						.active(category.isActive())
