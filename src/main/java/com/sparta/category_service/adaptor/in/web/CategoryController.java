@@ -22,6 +22,7 @@ import com.sparta.category_service.adaptor.in.web.vo.UpdateCategoryRequestVo;
 import com.sparta.category_service.application.port.in.CreateCategoryUseCase;
 import com.sparta.category_service.application.port.in.DeactivateCategoryUseCase;
 import com.sparta.category_service.application.port.in.LoadCategoryChildrenUseCase;
+import com.sparta.category_service.application.port.in.LoadCategoryLeavesUseCase;
 import com.sparta.category_service.application.port.in.LoadCategoryTreeUseCase;
 import com.sparta.category_service.application.port.in.UpdateCategoryUseCase;
 import com.sparta.category_service.application.port.in.dto.CategorySummaryDto;
@@ -41,6 +42,8 @@ public class CategoryController {
 	private final LoadCategoryTreeUseCase loadCategoryTreeUseCase;
 	// 카테고리 자식 목록 조회 UseCase
 	private final LoadCategoryChildrenUseCase loadCategoryChildrenUseCase;
+	// FO 활성 리프 카테고리 조회 UseCase
+	private final LoadCategoryLeavesUseCase loadCategoryLeavesUseCase;
 	// 카테고리 등록 UseCase
 	private final CreateCategoryUseCase createCategoryUseCase;
 	// 카테고리 수정 UseCase
@@ -55,6 +58,15 @@ public class CategoryController {
 	) {
 		List<CategoryTreeNodeDto> tree = loadCategoryTreeUseCase.loadTree(includeInactive);
 		return CategoryWebMapper.toTreeResponse(tree);
+	}
+
+	// FO: 활성 리프(끝 노드) 카테고리 목록 조회
+	@GetMapping("/leaves")
+	public List<CategorySummaryResponseVo> getLeaves(
+			@RequestParam(required = false) String parentUuid
+	) {
+		List<CategorySummaryDto> leaves = loadCategoryLeavesUseCase.loadLeaves(parentUuid);
+		return CategoryWebMapper.toSummaryResponse(leaves);
 	}
 
 	// 자식(또는 최상위) 카테고리 목록 조회
