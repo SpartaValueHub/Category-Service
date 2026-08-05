@@ -33,4 +33,20 @@ public class CategorySaveAdapter implements CategorySavePort {
 		CategoryEntity saved = categoryJpaRepository.save(entity);
 		return CategoryEntityMapper.toDomain(saved);
 	}
+
+	// 기존 카테고리 변경 저장
+	@Override
+	public Category update(Category category) {
+		CategoryEntity entity = categoryJpaRepository.findById(category.getCategoryId())
+				.orElseThrow(() -> new IllegalArgumentException("수정할 카테고리를 찾을 수 없습니다."));
+		entity.update(
+				category.getParentId(),
+				category.getCategoryName(),
+				category.getSortOrder(),
+				category.getDepth(),
+				category.isActive(),
+				category.getDeletedAt()
+		);
+		return CategoryEntityMapper.toDomain(entity);
+	}
 }

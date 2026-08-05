@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,12 +17,15 @@ import com.sparta.category_service.adaptor.in.web.mapper.CategoryWebMapper;
 import com.sparta.category_service.adaptor.in.web.vo.CategorySummaryResponseVo;
 import com.sparta.category_service.adaptor.in.web.vo.CategoryTreeNodeResponseVo;
 import com.sparta.category_service.adaptor.in.web.vo.CreateCategoryRequestVo;
+import com.sparta.category_service.adaptor.in.web.vo.UpdateCategoryRequestVo;
 import com.sparta.category_service.application.port.in.CreateCategoryUseCase;
 import com.sparta.category_service.application.port.in.LoadCategoryChildrenUseCase;
 import com.sparta.category_service.application.port.in.LoadCategoryTreeUseCase;
+import com.sparta.category_service.application.port.in.UpdateCategoryUseCase;
 import com.sparta.category_service.application.port.in.dto.CategorySummaryDto;
 import com.sparta.category_service.application.port.in.dto.CategoryTreeNodeDto;
 import com.sparta.category_service.application.port.in.dto.CreateCategoryCommand;
+import com.sparta.category_service.application.port.in.dto.UpdateCategoryCommand;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,6 +41,8 @@ public class CategoryController {
 	private final LoadCategoryChildrenUseCase loadCategoryChildrenUseCase;
 	// 카테고리 등록 UseCase
 	private final CreateCategoryUseCase createCategoryUseCase;
+	// 카테고리 수정 UseCase
+	private final UpdateCategoryUseCase updateCategoryUseCase;
 
 	// 카테고리 트리 조회
 	@GetMapping("/tree")
@@ -68,5 +75,23 @@ public class CategoryController {
 						.build()
 		);
 		return CategoryWebMapper.toSummaryResponse(created);
+	}
+
+	// 카테고리 수정 (BO) - path의 UUID 대상만 부분 수정
+	@PatchMapping("/{categoryUuid}")
+	public CategorySummaryResponseVo update(
+			@PathVariable String categoryUuid,
+			@RequestBody UpdateCategoryRequestVo request
+	) {
+		CategorySummaryDto updated = updateCategoryUseCase.update(
+				UpdateCategoryCommand.builder()
+						.categoryUuid(categoryUuid)
+						.categoryName(request.getCategoryName())
+						.parentUuidSpecified(request.isParentUuidSpecified())
+						.parentUuid(request.getParentUuid())
+						.sortOrder(request.getSortOrder())
+						.build()
+		);
+		return CategoryWebMapper.toSummaryResponse(updated);
 	}
 }
