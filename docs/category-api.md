@@ -235,3 +235,57 @@
 | 404 | CATEGORY_NOT_FOUND | 대상 또는 부모 카테고리 없음 |
 | 409 | DUPLICATE_CATEGORY_NAME | 같은 상위 아래 동일 카테고리명 존재 |
 
+---
+
+## DELETE /api/v1/categories/{categoryUuid}
+
+### Summary
+카테고리를 소프트 삭제(비활성)한다. (총관리자 BO)
+
+### Method · Path
+`DELETE /api/v1/categories/{categoryUuid}`
+
+### Auth
+불필요 (현재 permitAll)
+
+### Request
+
+| 위치 | 필드 | 타입 | 필수 | 제약/설명 |
+|------|------|------|------|-----------|
+| Path | categoryUuid | string | Y | 비활성 대상 카테고리 UUID |
+
+- Body 없음
+- DB row는 유지하고 `active=false`, `deleted_at`을 채운다
+- 하위 카테고리가 있으면 삭제할 수 없다
+
+### Response
+- Status: `200 OK`
+- Body: 비활성된 카테고리 단건 (요약)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| categoryUuid | string | 카테고리 UUID |
+| categoryName | string | 카테고리명 |
+| parentUuid | string \| null | 부모 카테고리 UUID |
+| sortOrder | number | 노출 순서 |
+| depth | number | 계층 깊이 |
+| active | boolean | `false` |
+
+```json
+{
+  "categoryUuid": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "categoryName": "테스트브랜드",
+  "parentUuid": "11111111-1111-1111-1111-111111111111",
+  "sortOrder": 1,
+  "depth": 2,
+  "active": false
+}
+```
+
+### Errors
+
+| status | code | 의미 |
+|--------|------|------|
+| 404 | CATEGORY_NOT_FOUND | 대상 카테고리 없음 |
+| 409 | CATEGORY_HAS_CHILDREN | 하위 카테고리가 있어 삭제 불가 |
+

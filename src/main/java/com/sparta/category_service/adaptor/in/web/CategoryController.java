@@ -3,6 +3,7 @@ package com.sparta.category_service.adaptor.in.web;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,6 +20,7 @@ import com.sparta.category_service.adaptor.in.web.vo.CategoryTreeNodeResponseVo;
 import com.sparta.category_service.adaptor.in.web.vo.CreateCategoryRequestVo;
 import com.sparta.category_service.adaptor.in.web.vo.UpdateCategoryRequestVo;
 import com.sparta.category_service.application.port.in.CreateCategoryUseCase;
+import com.sparta.category_service.application.port.in.DeactivateCategoryUseCase;
 import com.sparta.category_service.application.port.in.LoadCategoryChildrenUseCase;
 import com.sparta.category_service.application.port.in.LoadCategoryTreeUseCase;
 import com.sparta.category_service.application.port.in.UpdateCategoryUseCase;
@@ -43,6 +45,8 @@ public class CategoryController {
 	private final CreateCategoryUseCase createCategoryUseCase;
 	// 카테고리 수정 UseCase
 	private final UpdateCategoryUseCase updateCategoryUseCase;
+	// 카테고리 삭제(비활성) UseCase
+	private final DeactivateCategoryUseCase deactivateCategoryUseCase;
 
 	// 카테고리 트리 조회
 	@GetMapping("/tree")
@@ -93,5 +97,12 @@ public class CategoryController {
 						.build()
 		);
 		return CategoryWebMapper.toSummaryResponse(updated);
+	}
+
+	// 카테고리 삭제(비활성) (BO) - soft delete
+	@DeleteMapping("/{categoryUuid}")
+	public CategorySummaryResponseVo deactivate(@PathVariable String categoryUuid) {
+		CategorySummaryDto deactivated = deactivateCategoryUseCase.deactivate(categoryUuid);
+		return CategoryWebMapper.toSummaryResponse(deactivated);
 	}
 }
