@@ -172,3 +172,66 @@
 | 404 | CATEGORY_NOT_FOUND | parentUuid에 해당하는 부모 없음 |
 | 409 | DUPLICATE_CATEGORY_NAME | 같은 상위 아래 동일 카테고리명 존재 |
 
+---
+
+## PATCH /api/v1/categories/{categoryUuid}
+
+### Summary
+특정 카테고리를 부분 수정한다. (총관리자 BO)
+
+### Method · Path
+`PATCH /api/v1/categories/{categoryUuid}`
+
+### Auth
+불필요 (현재 permitAll)
+
+### Request
+- Content-Type: `application/json`
+- Path의 `categoryUuid`에 해당하는 카테고리만 수정한다.
+- Body에 **보낸 필드만** 반영한다. (안 보낸 필드는 유지)
+
+| 위치 | 필드 | 타입 | 필수 | 제약/설명 |
+|------|------|------|------|-----------|
+| Path | categoryUuid | string | Y | 수정 대상 카테고리 UUID |
+| Body | categoryName | string | N | 최대 50자. 같은 부모 아래 중복 불가 |
+| Body | parentUuid | string \| null | N | 키를 보내지 않으면 부모 유지. `null`/빈값이면 최상위 이동. UUID면 해당 부모 하위로 이동 |
+| Body | sortOrder | number | N | 없으면 기존 순서 유지 |
+
+```json
+{
+  "categoryName": "시계/주얼리",
+  "parentUuid": "11111111-1111-1111-1111-111111111111",
+  "sortOrder": 2
+}
+```
+
+최상위로 옮길 때 예:
+
+```json
+{
+  "parentUuid": null
+}
+```
+
+### Response
+- Status: `200 OK`
+- Body: 수정된 카테고리 단건 (요약)
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| categoryUuid | string | 카테고리 UUID |
+| categoryName | string | 카테고리명 |
+| parentUuid | string \| null | 부모 카테고리 UUID |
+| sortOrder | number | 노출 순서 |
+| depth | number | 계층 깊이 |
+| active | boolean | 활성화 여부 |
+
+### Errors
+
+| status | code | 의미 |
+|--------|------|------|
+| 400 | INVALID_ARGUMENT | 카테고리명 형식 오류, sortOrder 음수 등 |
+| 400 | INVALID_CATEGORY_HIERARCHY | 자기 자신/자기 하위로 부모 이동 시도 |
+| 404 | CATEGORY_NOT_FOUND | 대상 또는 부모 카테고리 없음 |
+| 409 | DUPLICATE_CATEGORY_NAME | 같은 상위 아래 동일 카테고리명 존재 |
+

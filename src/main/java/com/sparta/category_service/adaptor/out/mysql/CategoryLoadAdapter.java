@@ -40,6 +40,13 @@ public class CategoryLoadAdapter implements CategoryLoadPort {
 				.map(CategoryEntityMapper::toDomain);
 	}
 
+	// 카테고리 ID로 단건 조회
+	@Override
+	public Optional<Category> findById(Long categoryId) {
+		return categoryJpaRepository.findById(categoryId)
+				.map(CategoryEntityMapper::toDomain);
+	}
+
 	// 최상위 카테고리 목록 조회
 	@Override
 	public List<Category> findRoots(boolean includeInactive) {
@@ -71,5 +78,21 @@ public class CategoryLoadAdapter implements CategoryLoadPort {
 			return categoryJpaRepository.existsByParentIdIsNullAndCategoryName(categoryName);
 		}
 		return categoryJpaRepository.existsByParentIdAndCategoryName(parentId, categoryName);
+	}
+
+	// 같은 부모 아래 동일 카테고리명 존재 여부 (본인 제외)
+	@Override
+	public boolean existsByParentIdAndNameExcludingId(Long parentId, String categoryName, Long excludeCategoryId) {
+		if (parentId == null) {
+			return categoryJpaRepository.existsByParentIdIsNullAndCategoryNameAndCategoryIdNot(
+					categoryName,
+					excludeCategoryId
+			);
+		}
+		return categoryJpaRepository.existsByParentIdAndCategoryNameAndCategoryIdNot(
+				parentId,
+				categoryName,
+				excludeCategoryId
+		);
 	}
 }

@@ -14,6 +14,9 @@ public interface CategoryLoadPort {
 	// 카테고리 UUID로 단건 조회
 	Optional<Category> findByUuid(String categoryUuid);
 
+	// 카테고리 ID로 단건 조회
+	Optional<Category> findById(Long categoryId);
+
 	// 최상위 카테고리 목록 조회
 	List<Category> findRoots(boolean includeInactive);
 
@@ -22,4 +25,7 @@ public interface CategoryLoadPort {
 
 	// 같은 부모 아래 동일 카테고리명 존재 여부 (parentId null이면 최상위)
 	boolean existsByParentIdAndName(Long parentId, String categoryName);
+
+	// 같은 부모 아래 동일 카테고리명 존재 여부 (본인 ID 제외)
+	boolean existsByParentIdAndNameExcludingId(Long parentId, String categoryName, Long excludeCategoryId);
 }

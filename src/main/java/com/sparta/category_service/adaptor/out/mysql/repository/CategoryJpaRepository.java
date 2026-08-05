@@ -19,6 +19,12 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
 	// 최상위(부모 없음)에서 동일 카테고리명 존재 여부
 	boolean existsByParentIdIsNullAndCategoryName(String categoryName);
 
+	// 같은 상위 아래 동일 카테고리명 존재 여부 (본인 제외)
+	boolean existsByParentIdAndCategoryNameAndCategoryIdNot(Long parentId, String categoryName, Long categoryId);
+
+	// 최상위(부모 없음)에서 동일 카테고리명 존재 여부 (본인 제외)
+	boolean existsByParentIdIsNullAndCategoryNameAndCategoryIdNot(String categoryName, Long categoryId);
+
 	// 특정 상위의 자식 목록 (노출 순서 오름차순)
 	List<CategoryEntity> findByParentIdOrderBySortOrderAscCategoryIdAsc(Long parentId);
 
