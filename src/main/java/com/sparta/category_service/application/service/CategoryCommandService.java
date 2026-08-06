@@ -3,6 +3,7 @@ package com.sparta.category_service.application.service;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,7 +63,15 @@ public class CategoryCommandService implements CreateCategoryUseCase, UpdateCate
 			throw new DuplicateCategoryNameException("같은 상위 아래에 동일한 카테고리명이 이미 있습니다.");
 		}
 
-		int sortOrder = resolveSortOrder(parentId, command.getSortOrder());
+		// sortOrder를 직접 넣으면 그 자리부터 형제를 +1로 민다. 생략하면 마지막+1
+		int sortOrder;
+		if (command.getSortOrder() != null) {
+			sortOrder = command.getSortOrder();
+			shiftSiblingsFrom(parentId, sortOrder, null);
+		} else {
+			sortOrder = resolveSortOrder(parentId, null);
+		}
+
 		Category created = Category.create(
 				UUID.randomUUID().toString(),
 				categoryName,
@@ -113,6 +122,8 @@ public class CategoryCommandService implements CreateCategoryUseCase, UpdateCate
 
 		boolean nameChanged = !nextName.equals(target.getCategoryName());
 		boolean parentChanged = !Objects.equals(nextParentId, target.getParentId());
+		boolean sortOrderSpecified = command.getSortOrder() != null;
+		boolean sortOrderChanged = sortOrderSpecified && nextSortOrder != target.getSortOrder();
 		if (nameChanged || parentChanged) {
 			if (categoryLoadPort.existsByParentIdAndNameExcludingId(
 					nextParentId,
@@ -123,6 +134,11 @@ public class CategoryCommandService implements CreateCategoryUseCase, UpdateCate
 			}
 		}
 
+		// 순서를 넣었고(부모 이동 또는 번호 변경)면 새 자리에서 형제들을 +1로 민다
+		if (sortOrderSpecified && (parentChanged || sortOrderChanged)) {
+			shiftSiblingsFrom(nextParentId, nextSortOrder, target.getCategoryId());
+		}
+
 		int previousDepth = target.getDepth();
 		if (nameChanged) {
 			target.rename(nextName);
@@ -130,7 +146,7 @@ public class CategoryCommandService implements CreateCategoryUseCase, UpdateCate
 		if (hierarchyChanged || parentChanged) {
 			target.changeHierarchy(nextParentId, nextDepth);
 		}
-		if (command.getSortOrder() != null) {
+		if (sortOrderSpecified) {
 			target.changeSortOrder(nextSortOrder);
 		}
 
@@ -265,15 +281,34 @@ public class CategoryCommandService implements CreateCategoryUseCase, UpdateCate
 			return requestedSortOrder;
 		}
 
-		List<Category> siblings = parentId == null
-				? categoryLoadPort.findRoots(true)
-				: categoryLoadPort.findChildren(parentId, true);
-
+		List<Category> siblings = loadSiblings(parentId);
 		int maxSortOrder = siblings.stream()
 				.mapToInt(Category::getSortOrder)
 				.max()
 				.orElse(0);
 		return maxSortOrder + 1;
+	}
+
+	// fromSortOrder 이상인 형제의 순서를 +1 한다 (큰 번호부터 밀어 충돌을 줄인다)
+	private void shiftSiblingsFrom(Long parentId, int fromSortOrder, Long excludeCategoryId) {
+		List<Category> siblings = loadSiblings(parentId).stream()
+				.filter(sibling -> excludeCategoryId == null
+						|| !sibling.getCategoryId().equals(excludeCategoryId))
+				.filter(sibling -> sibling.getSortOrder() >= fromSortOrder)
+				.sorted(Comparator.comparingInt(Category::getSortOrder).reversed())
+				.toList();
+
+		for (Category sibling : siblings) {
+			sibling.changeSortOrder(sibling.getSortOrder() + 1);
+			categorySavePort.update(sibling);
+		}
+	}
+
+	// 같은 부모 형제 목록 (비활성 포함)
+	private List<Category> loadSiblings(Long parentId) {
+		return parentId == null
+				? categoryLoadPort.findRoots(true)
+				: categoryLoadPort.findChildren(parentId, true);
 	}
 
 	// 부모 해석 결과

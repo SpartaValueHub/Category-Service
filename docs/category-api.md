@@ -19,7 +19,7 @@ Category-Service 카테고리 API 명세서입니다.
 | 개념 | 설명 |
 |------|------|
 | 계층 | `parentUuid` / `depth`로 트리 구성. 최상위 `depth = 0` |
-| sortOrder | **같은 부모 아래** 화면 노출 순서 (작을수록 위). 현재 동일 값 중복 허용 |
+| sortOrder | **같은 부모 아래** 화면 노출 순서 (작을수록 위). 등록·수정 시 번호를 지정하면 그 자리 이상 형제는 +1로 밀림 (비활성 포함). 등록 시 생략하면 마지막+1 |
 | 리프(leaf) | 자식이 없는 끝 노드. 상품 등록 시 선택 대상 (브랜드 또는 브랜드 없는 중분류 끝단) |
 | 소프트 삭제 | row 삭제 없음. `active=false` + `deleted_at` 설정 |
 | FO | 활성(`active=true`)만 사용. 카테고리 선택 **고정 없음** (등록 중 경로 변경 가능) |
@@ -259,7 +259,7 @@ FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** �
 |------|------|------|------|-----------|
 | Body | categoryName | string | Y | 최대 50자. 같은 부모 아래 중복 불가 |
 | Body | parentUuid | string | N | 없으면 최상위(root). 있으면 해당 부모 하위 |
-| Body | sortOrder | number | N | 없으면 같은 부모 형제 중 마지막+1 (형제 없으면 1) |
+| Body | sortOrder | number | N | 없으면 같은 부모 형제 중 마지막+1 (형제 없으면 1). **지정하면** 같은 부모에서 그 번호 이상인 기존 형제를 +1로 민 뒤 해당 번호에 배치 |
 
 ```json
 {
@@ -304,7 +304,7 @@ FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** �
 | Path | categoryUuid | string | Y | 수정 대상 카테고리 UUID |
 | Body | categoryName | string | N | 최대 50자. 같은 부모 아래 중복 불가 |
 | Body | parentUuid | string \| null | N | 키를 보내지 않으면 부모 유지. `null`/빈값이면 최상위 이동. UUID면 해당 부모 하위로 이동 |
-| Body | sortOrder | number | N | 없으면 기존 순서 유지 |
+| Body | sortOrder | number | N | 없으면 기존 순서 유지. **지정했고** 번호가 바뀌거나 부모가 바뀌면, 새 부모 줄에서 그 번호 이상 형제(본인 제외)를 +1로 민 뒤 해당 번호에 배치 |
 
 ```json
 {
