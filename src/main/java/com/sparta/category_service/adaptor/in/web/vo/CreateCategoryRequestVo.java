@@ -12,6 +12,8 @@ public class CreateCategoryRequestVo {
 	private String categoryName;
 	// 부모 카테고리 UUID (없으면 최상위)
 	private String parentUuid;
-	// 노출 순서 (없으면 같은 부모 마지막+1)
-	private Integer sortOrder;
+	// 이 UUID 바로 뒤에 배치 (둘 중 하나만, 없으면 맨 뒤)
+	private String insertAfterUuid;
+	// 이 UUID 바로 앞에 배치 (둘 중 하나만, 없으면 맨 뒤)
+	private String insertBeforeUuid;
 }

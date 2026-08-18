@@ -87,7 +87,8 @@ public class CategoryController {
 				CreateCategoryCommand.builder()
 						.categoryName(request.getCategoryName())
 						.parentUuid(request.getParentUuid())
-						.sortOrder(request.getSortOrder())
+						.insertAfterUuid(request.getInsertAfterUuid())
+						.insertBeforeUuid(request.getInsertBeforeUuid())
 						.build()
 		);
 		return CategoryWebMapper.toSummaryResponse(created);
@@ -105,7 +106,10 @@ public class CategoryController {
 						.categoryName(request.getCategoryName())
 						.parentUuidSpecified(request.isParentUuidSpecified())
 						.parentUuid(request.getParentUuid())
-						.sortOrder(request.getSortOrder())
+						.insertAfterUuidSpecified(request.isInsertAfterUuidSpecified())
+						.insertBeforeUuidSpecified(request.isInsertBeforeUuidSpecified())
+						.insertAfterUuid(request.getInsertAfterUuid())
+						.insertBeforeUuid(request.getInsertBeforeUuid())
 						.build()
 		);
 		return CategoryWebMapper.toSummaryResponse(updated);

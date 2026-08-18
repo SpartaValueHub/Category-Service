@@ -16,6 +16,12 @@ public class UpdateCategoryCommand {
 	private final boolean parentUuidSpecified;
 	// 부모 UUID (지정됐고 null/blank면 최상위)
 	private final String parentUuid;
-	// 노출 순서 (null이면 유지)
-	private final Integer sortOrder;
+	// insertAfterUuid 키 포함 여부
+	private final boolean insertAfterUuidSpecified;
+	// insertBeforeUuid 키 포함 여부
+	private final boolean insertBeforeUuidSpecified;
+	// 이 UUID 바로 뒤에 배치
+	private final String insertAfterUuid;
+	// 이 UUID 바로 앞에 배치
+	private final String insertBeforeUuid;
 }

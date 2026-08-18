@@ -19,9 +19,10 @@ Category-Service 카테고리 API 명세서입니다.
 | 개념 | 설명 |
 |------|------|
 | 계층 | `parentUuid` / `depth`로 트리 구성. 최상위 `depth = 0` |
-| sortOrder | **같은 부모 아래** 노출 순서 (작을수록 위). **활성만** 1..N 연속. 등록·수정 시 지정 번호는 **활성 기준** 자리. 생략 시 활성 마지막+1. 비활성은 항상 맨 뒤(먼저 비활성화한 것이 더 앞 번호). 생성·순서/부모 수정·비활성 후 구멍이 있으면 당겨서 재번호 |
+| sortOrder | **같은 부모 아래** 정렬 **가중치**(gap: 1000, 2000, 5500 …). **UI 순번(1,2,3…)과 다름** — 화면 순서는 조회 배열 인덱스 사용. 조회는 `sort_order ASC`. 삭제 시 형제 숫자는 유지 |
+| 배치 | `insertAfterUuid` / `insertBeforeUuid` 중 **하나만** (또는 둘 다 생략 시 맨 뒤). 드래그·위치 지정 UI는 FE가 anchor UUID로 변환 |
 | 리프(leaf) | 자식이 없는 끝 노드. 상품 등록 시 선택 대상 (브랜드 또는 브랜드 없는 중분류 끝단) |
-| 소프트 삭제 | row 삭제 없음. `active=false` + `deleted_at` 설정. 비활성 시 해당 카테고리는 형제 중 맨 뒤 순번으로 이동하고, 나머지 활성은 앞으로 당겨 1..N 유지 |
+| 소프트 삭제 | row 삭제 없음. `active=false` + `deleted_at`. **형제 sort_order UPDATE 없음**. FO는 비활성 미노출 |
 | FO | 활성(`active=true`)만 사용. 카테고리 선택 **고정 없음** (등록 중 경로 변경 가능) |
 | BO | 트리 관리용 등록·수정·삭제(비활성). `includeInactive`로 비활성 포함 조회 가능 |
 
@@ -63,7 +64,7 @@ Category-Service 카테고리 API 명세서입니다.
 | categoryUuid | string | 카테고리 UUID |
 | categoryName | string | 카테고리명 |
 | parentUuid | string \| null | 부모 UUID (최상위면 null) |
-| sortOrder | number | 노출 순서 |
+| sortOrder | number | 정렬 가중치 (gap). **UI 순번 아님** |
 | depth | number | 계층 깊이 |
 | active | boolean | 활성화 여부 |
 
@@ -119,7 +120,7 @@ Category-Service 카테고리 API 명세서입니다.
 | categoryUuid | string | 카테고리 UUID |
 | categoryName | string | 카테고리명 |
 | parentUuid | string \| null | 부모 카테고리 UUID (최상위면 null) |
-| sortOrder | number | 노출 순서 |
+| sortOrder | number | 정렬 가중치 (gap). **UI 순번 아님** |
 | depth | number | 계층 깊이 (최상위 0) |
 | active | boolean | 활성화 여부 |
 | children | array | 자식 카테고리 목록 |
@@ -130,7 +131,7 @@ Category-Service 카테고리 API 명세서입니다.
     "categoryUuid": "11111111-1111-1111-1111-111111111111",
     "categoryName": "Luxury",
     "parentUuid": null,
-    "sortOrder": 1,
+    "sortOrder": 1000,
     "depth": 0,
     "active": true,
     "children": [
@@ -138,7 +139,7 @@ Category-Service 카테고리 API 명세서입니다.
         "categoryUuid": "22222222-2222-2222-2222-222222222222",
         "categoryName": "가방",
         "parentUuid": "11111111-1111-1111-1111-111111111111",
-        "sortOrder": 1,
+        "sortOrder": 1000,
         "depth": 1,
         "active": true,
         "children": []
@@ -181,7 +182,7 @@ Category-Service 카테고리 API 명세서입니다.
     "categoryUuid": "22222222-2222-2222-2222-222222222222",
     "categoryName": "가방",
     "parentUuid": "11111111-1111-1111-1111-111111111111",
-    "sortOrder": 1,
+    "sortOrder": 1000,
     "depth": 1,
     "active": true
   }
@@ -226,7 +227,7 @@ FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** �
     "categoryUuid": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
     "categoryName": "샤넬",
     "parentUuid": "22222222-2222-2222-2222-222222222222",
-    "sortOrder": 1,
+    "sortOrder": 1000,
     "depth": 2,
     "active": true
   }
@@ -259,13 +260,14 @@ FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** �
 |------|------|------|------|-----------|
 | Body | categoryName | string | Y | 최대 50자. 같은 부모 아래 중복 불가 |
 | Body | parentUuid | string | N | 없으면 최상위(root). 있으면 해당 부모 하위 |
-| Body | sortOrder | number | N | 없으면 **활성** 형제 마지막+1 (없으면 1). **지정하면** 활성만 기준 그 자리에 넣고 활성 1..N·비활성은 맨 뒤로 재번호 |
+| Body | insertAfterUuid | string | N | 이 UUID **바로 뒤**에 배치. `insertBeforeUuid`와 **동시 사용 불가** |
+| Body | insertBeforeUuid | string | N | 이 UUID **바로 앞**에 배치. 둘 다 생략 시 **맨 뒤** |
 
 ```json
 {
   "categoryName": "시계",
   "parentUuid": "11111111-1111-1111-1111-111111111111",
-  "sortOrder": 3
+  "insertAfterUuid": "22222222-2222-2222-2222-222222222222"
 }
 ```
 
@@ -277,7 +279,7 @@ FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** �
 
 | status | code | 의미 |
 |--------|------|------|
-| 400 | INVALID_ARGUMENT | 카테고리명 누락/형식 오류, sortOrder 음수 등 |
+| 400 | INVALID_ARGUMENT | 카테고리명 누락/형식 오류, insertAfter·insertBefore 동시 지정 등 |
 | 404 | CATEGORY_NOT_FOUND | parentUuid에 해당하는 부모 없음 |
 | 409 | DUPLICATE_CATEGORY_NAME | 같은 상위 아래 동일 카테고리명 존재 |
 
@@ -304,13 +306,14 @@ FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** �
 | Path | categoryUuid | string | Y | 수정 대상 카테고리 UUID |
 | Body | categoryName | string | N | 최대 50자. 같은 부모 아래 중복 불가 |
 | Body | parentUuid | string \| null | N | 키를 보내지 않으면 부모 유지. `null`/빈값이면 최상위 이동. UUID면 해당 부모 하위로 이동 |
-| Body | sortOrder | number | N | 없으면 기존 순서 유지(부모만 바뀌면 새 부모 **활성** 맨 뒤). **지정했고** 번호/부모가 바뀌면 새 부모의 **활성** 기준으로 그 자리에 배치 후 1..N 재번호 |
+| Body | insertAfterUuid | string \| null | N | 키를 보내면 순서 변경. 해당 UUID **바로 뒤**. `insertBeforeUuid`와 **동시 불가** |
+| Body | insertBeforeUuid | string \| null | N | 키를 보내면 순서 변경. 해당 UUID **바로 앞** |
+| | | | | `parentUuid`만 바뀌고 배치 키 없으면 **새 부모 맨 뒤** |
 
 ```json
 {
   "categoryName": "시계/주얼리",
-  "parentUuid": "11111111-1111-1111-1111-111111111111",
-  "sortOrder": 2
+  "insertAfterUuid": "22222222-2222-2222-2222-222222222222"
 }
 ```
 
@@ -330,7 +333,7 @@ FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** �
 
 | status | code | 의미 |
 |--------|------|------|
-| 400 | INVALID_ARGUMENT | 카테고리명 형식 오류, sortOrder 음수 등 |
+| 400 | INVALID_ARGUMENT | 카테고리명 형식 오류, insertAfter·insertBefore 동시 지정 등 |
 | 400 | INVALID_CATEGORY_HIERARCHY | 자기 자신/자기 하위로 부모 이동 시도 |
 | 404 | CATEGORY_NOT_FOUND | 대상 또는 부모 카테고리 없음 |
 | 409 | DUPLICATE_CATEGORY_NAME | 같은 상위 아래 동일 카테고리명 존재 |
@@ -357,7 +360,7 @@ FO 상품 등록용으로 **활성 리프(자식이 없는 끝 카테고리)** �
 - Body 없음
 - DB row는 유지하고 `active=false`, `deleted_at`을 채운다
 - 하위 카테고리가 있으면 삭제할 수 없다
-- 비활성된 카테고리는 같은 부모 형제 중 **맨 뒤** sortOrder로 이동하고, 남은 활성은 앞으로 당겨 1..N을 유지한다 (여러 비활성은 먼저 비활성화한 순으로 앞 번호)
+- **형제 카테고리 sort_order는 변경하지 않는다** (gap 유지)
 
 ### Response
 - Status: `200 OK`

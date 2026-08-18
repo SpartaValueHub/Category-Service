@@ -20,7 +20,7 @@ public class Category {
 	private Long parentId;
 	// 카테고리명
 	private String categoryName;
-	// 노출 순서
+	// 노출 순서 (같은 부모 아래 gap 정렬 가중치)
 	private int sortOrder;
 	// 계층 깊이 (최상위 0)
 	private int depth;
@@ -175,10 +175,10 @@ public class Category {
 		}
 	}
 
-	// 노출 순서 검증
+	// 노출 순서 검증 (gap 가중치, 1 이상)
 	private static void validateSortOrder(int sortOrder) {
-		if (sortOrder < 0) {
-			throw new IllegalArgumentException("노출 순서는 0 이상이어야 합니다.");
+		if (sortOrder < 1) {
+			throw new IllegalArgumentException("노출 순서는 1 이상이어야 합니다.");
 		}
 	}
 }
